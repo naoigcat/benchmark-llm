@@ -1,10 +1,70 @@
+# Swift is pinned to the release that ships with the Xcode used for benchmarks (Xcode 27, Swift 6.4).
+# mise installs only the compiler and standard library; the Apple SDK still comes from the Xcode that
+# xcode-select points at, so bump this together with Xcode. A compiler older than that SDK fails:
+# swift 6.0.3 against Xcode 27's MacOSX27.0.sdk could not build module 'CoreFoundation'.
+# `mise run toolchain` records which Xcode and Swift actually ran.
+[tools]
+swift = "6.4.0"
+
+[tasks.toolchain]
+description = "Report the selected Xcode and Swift toolchain"
+run = '''
+#!/bin/sh
+set -eu
+xcodebuild -version
+swift --version
+'''
+
 [tasks.markdownlint]
 description = "Lint Markdown in Docker"
 run = '''
 #!/bin/sh
 set -eu
-exec docker run --rm \
+# Pass tracked files only: the container cannot see global Git excludes.
+git -C "$MISE_PROJECT_ROOT" ls-files -z -- '*.md' | xargs -0 docker run --rm \
     --mount "type=bind,src=$MISE_PROJECT_ROOT,dst=/workdir,readonly" \
     --workdir /workdir \
     davidanson/markdownlint-cli2:v0.23.2@sha256:839558fd0d36c46da0e01ea84fd1d20a2822b5a8a60c16dc9708f0bb7c9e903b
 '''
+
+[tasks.format]
+description = "Format Swift source and test files"
+run = "swift format format --in-place --recursive Package.swift Sources Tests"
+
+[tasks.check]
+description = "Compile Swift sources with warnings as errors"
+run = "swift build --disable-automatic-resolution -Xswiftc -warnings-as-errors"
+
+[tasks.lint]
+description = "Lint Swift source and test files with swift format"
+run = "swift format lint --strict --recursive Package.swift Sources Tests"
+
+[tasks.test]
+description = "Run Swift tests with warnings as errors"
+run = "swift test --disable-automatic-resolution -Xswiftc -warnings-as-errors"
+
+[tasks.verify]
+description = "Verify Swift code and tests"
+run = [
+    "mise run toolchain",
+    "mise run check",
+    "mise run lint",
+    "mise run test",
+]
+
+[tasks.build]
+description = "Build Benchmark for release"
+run = "swift build --configuration release --disable-automatic-resolution"
+
+[tasks.execute]
+description = "Run Benchmark"
+raw_args = true
+run = '''
+#!/bin/sh
+set -eu
+exec swift run --quiet --configuration release --disable-automatic-resolution benchmark "$@"
+'''
+
+[tasks.clean]
+description = "Remove Swift build products"
+run = "swift package clean"

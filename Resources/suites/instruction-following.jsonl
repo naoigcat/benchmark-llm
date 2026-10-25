@@ -1,0 +1,9 @@
+{"id":"instruction-001","category":"instruction-following","prompt":"次の3語を五十音順に並べ、読点なしでスラッシュ区切りの1行だけを返してください。すいか、りんご、いちご","scorer":{"type":"exact","expected":"いちご/すいか/りんご"},"pass_threshold":1.0}
+{"id":"instruction-002","category":"instruction-following","prompt":"入力は『北,東,南,西』です。2番目の要素を除き、残りを逆順にしてスラッシュ区切りで返してください。説明は不要です。","scorer":{"type":"exact","expected":"西/南/北"},"pass_threshold":1.0}
+{"id":"instruction-003","category":"instruction-following","prompt":"文字列 benchmark の文字を1始まりで数え、奇数番目の文字だけを順番どおり連結して返してください。答えだけを書いてください。","scorer":{"type":"exact","expected":"bnhak"},"pass_threshold":1.0}
+{"id":"instruction-004","category":"instruction-following","prompt":"3、2、1をこの順で、空白または改行で区切って出力してください。前後に説明やコードフェンスを付けないでください。","scorer":{"type":"exact","expected":"3\n2\n1","normalize_whitespace":true},"pass_threshold":1.0}
+{"id":"instruction-005","category":"instruction-following","prompt":"『赤』『青』『緑』のうち青だけを除外し、残りを入力と逆順に並べてカンマ区切りで返してください。空白や説明は付けないでください。","scorer":{"type":"exact","expected":"緑,赤"},"pass_threshold":1.0}
+{"id":"instruction-006","category":"instruction-following","prompt":"文字列『a1b2c3』から数字だけを取り出し、降順に並べて連結してください。答えだけを返してください。","scorer":{"type":"exact","expected":"321"},"pass_threshold":1.0}
+{"id":"instruction-007","category":"instruction-following","prompt":"『red blue red green blue』を空白で区切られた単語として扱い、初出の順序を保って重複を除去し、英大文字に変換してください。空白を入れないカンマ区切りの1行だけを返してください。","scorer":{"type":"exact","expected":"RED,BLUE,GREEN"},"pass_threshold":1.0}
+{"id":"instruction-008","category":"instruction-following","prompt":"次の3行のうち文字数が2の行だけを入力順に残してください。1行に1つずつ出力してください。説明は不要です。\n猫\n子犬\n小鳥","scorer":{"type":"exact","expected":"子犬\n小鳥"},"pass_threshold":1.0}
+{"id":"instruction-009","category":"instruction-following","prompt":"単語 apple を2回、bananaを1回、この順にセミコロンで区切って出力してください。先頭に[、末尾に]を付け、空白や説明を付けないでください。","scorer":{"type":"exact","expected":"[apple;apple;banana]"},"pass_threshold":1.0}

@@ -1,0 +1,19 @@
+.build/
+.swiftpm/
+.benchmark.lock
+
+# Keep report outputs and the inputs needed to regenerate comparisons in Git.
+# Ignore raw responses, locks, and any other run-local files.
+# Results outside the repository-root output directories stay local.
+/Deliverables/Runs/*
+!/Deliverables/Runs/*/
+/Deliverables/Runs/*/*
+!/Deliverables/Runs/*/manifest.json
+!/Deliverables/Runs/*/trials.jsonl
+!/Deliverables/Runs/*/report.md
+!/Deliverables/Runs/*/summary.csv
+!/Deliverables/Runs/*/category-summary.csv
+/Deliverables/Comparisons/*
+!/Deliverables/Comparisons/report.md
+!/Deliverables/Comparisons/summary.csv
+!/Deliverables/Comparisons/category-summary.csv

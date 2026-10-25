@@ -1,0 +1,177 @@
+name: Sync pinned tool versions
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-pinned-tool-versions
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    # The branch starts from the checked-out ref but the PR targets the default branch. Schedules always
+    # run on the default branch, and their event payload has no repository to compare against.
+    if: >-
+      github.event_name == 'schedule'
+      || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: true
+
+      - name: Resolve latest versions
+        id: versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          mise_tag="$(gh api repos/jdx/mise/releases/latest --jq '.tag_name')"
+          mise_version="${mise_tag#v}"
+          if [[ ! "$mise_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Unexpected mise release tag: $mise_tag"
+            exit 1
+          fi
+
+          docker_tags_url="https://hub.docker.com/v2/repositories/davidanson/markdownlint-cli2/tags?page_size=100&ordering=last_updated"
+          # Read tag and digest from one response so a tag pushed between two requests cannot split them.
+          docker_tags="$(curl --fail --silent --show-error --location --retry 3 --retry-delay 2 "$docker_tags_url")"
+          docker_tag="$(
+            printf '%s' "$docker_tags" |
+              jq -er '
+                [.results[]
+                  | .name
+                  | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))
+                  | {name: ., version: (capture("^v(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)$") | [.major, .minor, .patch] | map(tonumber))}
+                ]
+                | sort_by(.version)
+                | last
+                | .name
+              '
+          )"
+          docker_digest="$(
+            printf '%s' "$docker_tags" |
+              jq -er --arg tag "$docker_tag" '.results[] | select(.name == $tag) | .digest'
+          )"
+          if [[ ! "$docker_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Unexpected markdownlint-cli2 tag: $docker_tag"
+            exit 1
+          fi
+          if [[ ! "$docker_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Unexpected markdownlint-cli2 digest: $docker_digest"
+            exit 1
+          fi
+
+          {
+            echo "mise_version=$mise_version"
+            echo "markdownlint_tag=$docker_tag"
+            echo "markdownlint_digest=$docker_digest"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update pinned references
+        env:
+          MISE_VERSION: ${{ steps.versions.outputs.mise_version }}
+          MARKDOWNLINT_TAG: ${{ steps.versions.outputs.markdownlint_tag }}
+          MARKDOWNLINT_DIGEST: ${{ steps.versions.outputs.markdownlint_digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          markdownlint_pattern='davidanson/markdownlint-cli2:v[0-9]+\.[0-9]+\.[0-9]+@sha256:[0-9a-f]{64}'
+          if ! grep -Eq "$markdownlint_pattern" .mise.toml; then
+            echo "::error::.mise.toml does not contain the expected markdownlint-cli2 reference"
+            exit 1
+          fi
+          sed -E -i "s#davidanson/markdownlint-cli2:v[0-9]+\.[0-9]+\.[0-9]+@sha256:[0-9a-f]{64}#davidanson/markdownlint-cli2:${MARKDOWNLINT_TAG}@${MARKDOWNLINT_DIGEST}#g" .mise.toml
+
+          # Keep the mise version outside .github/workflows: GITHUB_TOKEN may not push workflow files.
+          printf '%s\n' "$MISE_VERSION" > .github/mise-version
+
+      - name: Create or update pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MISE_VERSION: ${{ steps.versions.outputs.mise_version }}
+          MARKDOWNLINT_TAG: ${{ steps.versions.outputs.markdownlint_tag }}
+          MARKDOWNLINT_DIGEST: ${{ steps.versions.outputs.markdownlint_digest }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          pinned=(.mise.toml .github/mise-version)
+          branch="automation/sync-pinned-tool-versions"
+          # --head matches the branch name in forks too; only this repository's branch is ours.
+          pr_number="$(gh pr list --state open --head "$branch" --json number,isCrossRepository \
+            --jq '[.[] | select(.isCrossRepository | not)][0].number // empty')"
+          if git diff --quiet -- "${pinned[@]}"; then
+            echo "Pinned references are already up to date."
+            # The default branch caught up on its own; merging the older pull request would roll it back.
+            if [[ -n "$pr_number" ]]; then
+              gh pr close "$pr_number" --delete-branch \
+                --comment "The default branch already has the latest pinned references."
+            fi
+            exit 0
+          fi
+
+          title="chore: sync pinned tool versions"
+          default_branch="$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq '.defaultBranchRef.name')"
+          body="$(cat <<EOF
+          Updates the pinned versions used by the check workflow:
+
+          - davidanson/markdownlint-cli2:${MARKDOWNLINT_TAG}@${MARKDOWNLINT_DIGEST}
+          - mise ${MISE_VERSION}
+
+          Generated by .github/workflows/sync.yml.
+          EOF
+          )"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          remote_branch_exists=false
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch --no-tags origin "+refs/heads/$branch:refs/remotes/origin/$branch"
+            remote_branch_exists=true
+          fi
+          # An open pull request that already carries these values needs no new commit. Its checks may
+          # still be missing when an earlier sync was cancelled or failed before dispatching them.
+          if [[ "$remote_branch_exists" == true && -n "$pr_number" ]] &&
+            git diff --quiet "origin/$branch" -- "${pinned[@]}"; then
+            echo "The open pull request already has these pinned references."
+            head_sha="$(git rev-parse "origin/$branch")"
+            dispatched="$(gh run list --workflow check.yml --event workflow_dispatch \
+              --commit "$head_sha" --json conclusion \
+              --jq '[.[] | select(.conclusion != "cancelled")] | length')"
+            if [[ "$dispatched" == 0 ]]; then
+              gh workflow run check.yml --ref "$branch"
+            fi
+            exit 0
+          fi
+
+          git switch -C "$branch"
+          git add "${pinned[@]}"
+          git commit -m "$title"
+          if [[ "$remote_branch_exists" == true ]]; then
+            git push --force-with-lease origin "$branch"
+          else
+            git push origin "$branch"
+          fi
+
+          if [[ -n "$pr_number" ]]; then
+            gh pr edit "$pr_number" --title "$title" --body "$body"
+          else
+            gh pr create --base "$default_branch" --head "$branch" --title "$title" --body "$body"
+          fi
+
+          # Pushes and pull requests made with GITHUB_TOKEN start no workflows, so start the checks here.
+          gh workflow run check.yml --ref "$branch"

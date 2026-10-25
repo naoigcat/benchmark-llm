@@ -1,0 +1,91 @@
+{
+  "run": {
+    "repeat": 5,
+    "request_timeout_seconds": 300,
+    "cooldown_seconds": 3,
+    "max_output_tokens": 2048,
+    "temperature": 0.7,
+    "seed": 42,
+    "cache_conditions": ["cold", "warm"],
+    "system_prompt": "You are being evaluated. Follow the user's output-format instructions exactly. Answer using only model-generated text. Do not call any tools."
+  },
+  "report": {
+    "language": "ja"
+  },
+  "selection": {
+    "minimum_pass_rate": 0.80,
+    "minimum_median_tokens_per_second": 10.0,
+    "maximum_peak_swap_delta_gib": 1.0,
+    "maximum_backend_memory_fraction": 0.70
+  },
+  "hosts": [
+    {
+      "id": "mac-studio-m2-max-96gb",
+      "chip": "Apple M2 Max",
+      "memory_gib": 96
+    },
+    {
+      "id": "macbook-pro-m1-pro-16gb",
+      "chip": "Apple M1 Pro",
+      "memory_gib": 16
+    }
+  ],
+  "targets": [
+    {
+      "id": "ollama-gemma4-e2b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "ollama-gemma4-e4b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "ollama-gemma4-12b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "ollama-gemma4-26b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb"]
+    },
+    {
+      "id": "ollama-gemma4-31b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb"]
+    },
+    {
+      "id": "ollama-gpt-oss-swallow-20b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "ollama-gpt-oss-swallow-120b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb"]
+    },
+    {
+      "id": "ollama-ornith-1.5-9b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "ollama-ornith-1.5-35b",
+      "eligible_hosts": ["mac-studio-m2-max-96gb"]
+    },
+    {
+      "id": "cursor-composer-2.5",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "codex-gpt-5.6-luna-max",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "claude-sonnet-5-max",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "antigravity-gemini-3.8-flash-high",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    },
+    {
+      "id": "antigravity-gpt-oss-120b-medium",
+      "eligible_hosts": ["mac-studio-m2-max-96gb", "macbook-pro-m1-pro-16gb"]
+    }
+  ]
+}

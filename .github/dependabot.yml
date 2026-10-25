@@ -1,0 +1,10 @@
+version: 2
+# The package has no Swift dependencies, so only GitHub Actions are watched. Dependabot does not
+# update values embedded in .mise.toml or action inputs: .github/workflows/sync.yml opens a weekly PR
+# for the Markdown image digest and the mise version in .github/mise-version, and maintainers review the
+# Swift toolchain manually.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -1,0 +1,9 @@
+{"id":"reasoning-001","category":"reasoning","prompt":"計算結果の整数だけを返してください。(17 × 23) - 19","scorer":{"type":"exact","expected":"372"},"pass_threshold":1.0}
+{"id":"reasoning-002","category":"reasoning","prompt":"2026を37で割った余りを、整数だけで返してください。","scorer":{"type":"exact","expected":"28"},"pass_threshold":1.0}
+{"id":"reasoning-003","category":"reasoning","prompt":"A:B = 3:5で、AとBの合計は64です。Bの値だけを返してください。","scorer":{"type":"exact","expected":"40"},"pass_threshold":1.0}
+{"id":"reasoning-004","category":"reasoning","prompt":"前提: すべてのAはBである。Bであるものは1つもCではない。この前提から『Aであるものは1つもCではない』は必ず言えますか。YESまたはNOだけを返してください。","scorer":{"type":"exact","expected":"YES","case_sensitive":false},"pass_threshold":1.0}
+{"id":"reasoning-005","category":"reasoning","prompt":"前提: すべてのプログラマーは好奇心がある。好奇心がある人の一部は音楽家である。この前提だけから『プログラマーの一部は音楽家である』は必ず言えますか。YESまたはNOだけを返してください。","scorer":{"type":"exact","expected":"NO","case_sensitive":false},"pass_threshold":1.0}
+{"id":"reasoning-006","category":"reasoning","prompt":"数列 2, 6, 12, 20, 30 の次の数を、整数だけで返してください。","scorer":{"type":"exact","expected":"42"},"pass_threshold":1.0}
+{"id":"reasoning-007","category":"reasoning","prompt":"作業XはYより後、作業ZはYより前に実行します。3作業を実行順に左から並べ、A>B>Cのような形式で返してください。","scorer":{"type":"exact","expected":"Z>Y>X"},"pass_threshold":1.0}
+{"id":"reasoning-008","category":"reasoning","prompt":"5人から順序を考えず2人を選ぶ組み合わせは何通りですか。整数だけを返してください。","scorer":{"type":"exact","expected":"10"},"pass_threshold":1.0}
+{"id":"reasoning-009","category":"reasoning","prompt":"日本標準時（UTC+9）の18:30はUTCで何時ですか。24時間表記のHH:MMだけを返してください。","scorer":{"type":"exact","expected":"09:30"},"pass_threshold":1.0}

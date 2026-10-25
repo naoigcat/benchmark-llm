@@ -1,0 +1,98 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # sync.yml dispatches this workflow, because pushes made with GITHUB_TOKEN start no workflows.
+  workflow_dispatch:
+
+concurrency:
+  # Preserve every push, including queued runs; only revisions of the same PR supersede each other.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# The mise version lives in .github/mise-version: sync.yml updates it with GITHUB_TOKEN, which may not
+# push changes to workflow files.
+
+jobs:
+  check:
+    name: Latest supported macOS (macos-latest)
+    # Exercise OS-specific behavior on the platform used for benchmarks.
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Read pinned mise version
+        id: mise
+        run: echo "version=$(cat .github/mise-version)" >> "$GITHUB_OUTPUT"
+      - name: Install mise
+        uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+        with:
+          version: ${{ steps.mise.outputs.version }}
+          cache: false
+          env: false
+      - name: Check Xcode and Apple Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Lint, compile, and test Swift code
+        run: mise run verify
+      - name: Build release
+        run: mise run build
+
+  minimum-os:
+    name: Minimum supported macOS (macos-15)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Read pinned mise version
+        id: mise
+        run: echo "version=$(cat .github/mise-version)" >> "$GITHUB_OUTPUT"
+      - name: Install mise
+        uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+        with:
+          version: ${{ steps.mise.outputs.version }}
+          cache: false
+          env: false
+      - name: Check Xcode and Apple Swift toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Test on minimum supported macOS
+        run: mise run test
+      - name: Build release on minimum supported macOS
+        run: mise run build
+
+  markdown:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Markdown runs in Docker; skip the Swift toolchain that .mise.toml pins for the macOS jobs.
+    env:
+      MISE_TASK_RUN_AUTO_INSTALL: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Read pinned mise version
+        id: mise
+        run: echo "version=$(cat .github/mise-version)" >> "$GITHUB_OUTPUT"
+      - name: Install mise
+        uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+        with:
+          version: ${{ steps.mise.outputs.version }}
+          cache: false
+          env: false
+          install: false
+      - name: Set up Docker for Markdown checks
+        uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
+      - name: Lint Markdown
+        run: mise run markdownlint

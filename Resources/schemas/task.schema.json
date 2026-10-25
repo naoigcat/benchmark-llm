@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/benchmark/task.schema.json",
+  "title": "LLM benchmark task",
+  "type": "object",
+  "required": ["id", "category", "prompt", "scorer"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "$comment": "Require a character outside the Unicode White_Space property, which differs from ECMAScript whitespace.",
+      "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "$comment": "Require a character outside the Unicode White_Space property, which differs from ECMAScript whitespace.",
+      "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+    },
+    "pass_threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+    "scorer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "expected"],
+          "properties": {
+            "type": { "const": "exact" },
+            "expected": {
+              "type": ["string", "number", "array"],
+              "items": {
+                "type": ["string", "number"],
+                "$comment": "The trimmed response is compared, so a blank string could never match.",
+                "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+              },
+              "minItems": 1,
+              "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+            },
+            "case_sensitive": { "type": "boolean" },
+            "normalize_whitespace": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "expected"],
+          "properties": {
+            "type": { "const": "contains_all" },
+            "expected": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1,
+              "uniqueItems": true,
+              "description": "When case_sensitive is false, the loader additionally rejects duplicates equivalent under Unicode case folding; JSON Schema cannot express this constraint."
+            },
+            "case_sensitive": { "type": "boolean" },
+            "max_chars": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum Unicode code points in the trimmed response, without normalization; combining marks and variation selectors count separately."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "pattern"],
+          "properties": {
+            "type": { "const": "regex" },
+            "pattern": { "type": "string" },
+            "case_sensitive": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "expected"],
+          "properties": {
+            "type": { "const": "json_exact" },
+            "expected": {},
+            "allow_code_fence": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

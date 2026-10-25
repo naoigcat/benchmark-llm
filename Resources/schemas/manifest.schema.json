@@ -1,0 +1,591 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/benchmark/manifest.schema.json",
+  "title": "Benchmark run manifest",
+  "type": "object",
+  "required": [
+    "run_id",
+    "status",
+    "started_at",
+    "application",
+    "repository",
+    "config",
+    "suite",
+    "host_id",
+    "host",
+    "run_settings",
+    "report_settings",
+    "selection",
+    "targets"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9]{8}T[0-9]{12}Z-[a-z0-9._-]+$"
+    },
+    "status": {
+      "enum": [
+        "running",
+        "completed",
+        "failed",
+        "interrupted"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "application": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "language"
+      ],
+      "properties": {
+        "name": {
+          "const": "benchmark"
+        },
+        "version": {
+          "type": "string"
+        },
+        "language": {
+          "const": "swift"
+        }
+      },
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "required": [
+        "revision",
+        "dirty"
+      ],
+      "properties": {
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dirty": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "config": {
+      "$ref": "#/$defs/fileDigest"
+    },
+    "suite": {
+      "description": "The suites directory, the combined digest of its JSONL filenames and contents, and the total task count.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/fileDigest"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "task_count": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "task_count"
+          ]
+        }
+      ]
+    },
+    "host_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "host": {
+      "type": "object",
+      "required": [
+        "os",
+        "os_version",
+        "architecture",
+        "hardware_model",
+        "chip",
+        "memory_bytes",
+        "physical_cpu_count",
+        "logical_cpu_count"
+      ],
+      "properties": {
+        "os": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "os_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "architecture": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hardware_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "chip": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "memory_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "physical_cpu_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "logical_cpu_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "run_settings": {
+      "type": "object",
+      "required": [
+        "workdir",
+        "repeat",
+        "request_timeout_seconds",
+        "cooldown_seconds",
+        "max_output_tokens",
+        "temperature",
+        "seed",
+        "shuffle_algorithm",
+        "generation_seed_algorithm",
+        "cache_conditions",
+        "system_prompt"
+      ],
+      "properties": {
+        "workdir": {
+          "type": "string",
+          "description": "Implementation repository root, recorded as '.'; reference CLI processes use separate temporary working directories."
+        },
+        "repeat": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "request_timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cooldown_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Benchmark sampling range, bounded to catch configuration mistakes before measurement."
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807,
+          "description": "Required run.seed value used for trial order, recorded unchanged from the configuration."
+        },
+        "shuffle_algorithm": {
+          "type": "string",
+          "description": "Versioned trial-shuffling algorithm; currently splitmix64-fisher-yates-v1."
+        },
+        "generation_seed_algorithm": {
+          "type": "string",
+          "description": "Versioned Ollama generation seed policy; repeat-v1 uses the one-based repetition number."
+        },
+        "cache_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "cold",
+              "warm"
+            ]
+          }
+        },
+        "system_prompt": {
+          "type": "string"
+        },
+        "ollama_server_environment": {
+          "type": "object",
+          "description": "Ollama environment by normalized endpoint. Objects contain every OLLAMA_* override; other OLLAMA_* variables are unset and use the recorded backend version's defaults. Null means no startup environment was recorded: an existing server was reused, automatic startup was skipped for HTTPS, or automatic startup failed. Check each target's doctor result for availability and startup failures.",
+          "additionalProperties": {
+            "type": ["object", "null"],
+            "required": ["OLLAMA_HOST"],
+            "properties": {
+              "OLLAMA_HOST": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "report_settings": {
+      "type": "object",
+      "required": [
+        "language"
+      ],
+      "properties": {
+        "language": {
+          "enum": [
+            "ja",
+            "en"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "selection": {
+      "type": "object",
+      "required": [
+        "minimum_pass_rate",
+        "minimum_median_tokens_per_second",
+        "maximum_peak_swap_delta_gib",
+        "maximum_backend_memory_fraction"
+      ],
+      "properties": {
+        "minimum_pass_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "minimum_median_tokens_per_second": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximum_peak_swap_delta_gib": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximum_backend_memory_fraction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "inference_location",
+          "adapter",
+          "model",
+          "base_url",
+          "eligible_hosts",
+          "doctor"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "inference_location": {
+            "enum": [
+              "local",
+              "remote"
+            ]
+          },
+          "adapter": {
+            "enum": [
+              "ollama",
+              "cli-agent"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "base_url": {
+            "type": "string",
+            "description": "Ollama endpoint on loopback; empty for CLI agents."
+          },
+          "backend": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quantization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "context_window": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "eligible_hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "process_match": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prompt_delivery": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "event_schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "doctor": {
+            "type": "object",
+            "required": [
+              "ok",
+              "version",
+              "resolved_model",
+              "metadata",
+              "message"
+            ],
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "resolved_model": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "digest": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "format": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "family": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "parameter_size": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "quantization_level": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "size_bytes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0
+                  },
+                  "command": {
+                    "type": "string"
+                  },
+                  "isolation_product": {
+                    "type": "string"
+                  },
+                  "event_schema": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "isolation_variables": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "status_args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "message": {
+                "enum": [
+                  "ready",
+                  "preflight failed"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "isolation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Isolation applied to a reference agent target; null for local targets.",
+            "required": [
+              "policy_version",
+              "product",
+              "variables",
+              "status_args",
+              "fresh_working_directory_per_process"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "policy_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "product": {
+                "enum": [
+                  "cursor",
+                  "codex",
+                  "claude",
+                  "antigravity"
+                ]
+              },
+              "profile_root": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Always null: benchmark profiles must reside outside the repository; neither their path nor contents are recorded."
+              },
+              "variables": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Names of the variables the policy sets, never their values."
+              },
+              "status_args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "fresh_working_directory_per_process": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "fileDigest": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": ["string", "null"],
+          "description": "Repository-relative path, or null when outside the repository."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
