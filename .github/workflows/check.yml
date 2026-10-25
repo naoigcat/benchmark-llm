@@ -93,6 +93,6 @@ jobs:
           env: false
           install: false
       - name: Set up Docker for Markdown checks
-        uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
+        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5.6.0
       - name: Lint Markdown
         run: mise run markdownlint
