@@ -24,7 +24,7 @@ set -eu
 git -C "$MISE_PROJECT_ROOT" ls-files -z -- '*.md' | xargs -0 docker run --rm \
     --mount "type=bind,src=$MISE_PROJECT_ROOT,dst=/workdir,readonly" \
     --workdir /workdir \
-    davidanson/markdownlint-cli2:v0.23.2@sha256:839558fd0d36c46da0e01ea84fd1d20a2822b5a8a60c16dc9708f0bb7c9e903b
+    davidanson/markdownlint-cli2:v0.24.0@sha256:70ead7c0352d22d04bbe612cd96b54ec591538d8f4626cafe391bb2ecf3639ca
 '''
 
 [tasks.format]
